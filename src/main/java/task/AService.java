@@ -1,43 +1,32 @@
 package task;
 
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import task.exception.EssenceNotFoundException;
+import task.exception.Exception404;
 
 import java.time.LocalTime;
 import java.util.UUID;
 
 @Service
 public class AService {
+    @Autowired
+    private Repository repository;
 
-    /**
-     * POST /task
-     * @param repository
-     * @throws InterruptedException
-     * @throws EssenceNotFoundException
-     */
-    @Async("asyncExecutor")
-    public UUID createAndUpdate(Repository repository) throws InterruptedException, EssenceNotFoundException {
+    @Autowired
+    private AProcessor processor;
 
+    public UUID createAndUpdate() throws InterruptedException, EssenceNotFoundException {
         // создание записи
         Essence essence = new Essence(LocalTime.now(), "created");
         repository.save(essence);
 
-        // обновление записи
-        Essence updateEssence = repository.findById(essence.getId())
-                .orElseThrow(() -> new EssenceNotFoundException(essence.getId()));
-        updateEssence.setTimestamp(LocalTime.now());
-        updateEssence.setStatus("running");
-        repository.save(updateEssence);
-
-        // ожидание
-        Thread.sleep(120000L);
-        updateEssence = repository.findById(essence.getId())
-                .orElseThrow(() -> new EssenceNotFoundException(essence.getId()));
-        updateEssence.setTimestamp(LocalTime.now());
-        updateEssence.setStatus("finished");
-        repository.save(updateEssence);
-
+        //асинхронно планируем "тяжелую работу" на 2 минуты
+        processor.doHeavyWork(essence);
         return essence.getId();
+    }
+
+    public Essence findById(UUID uuid) {
+        return repository.findById(uuid).orElseThrow(Exception404::new);
     }
 }

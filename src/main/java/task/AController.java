@@ -10,15 +10,13 @@ import task.exception.Exception400;
 import task.exception.Exception404;
 
 import java.util.UUID;
+import java.util.concurrent.Future;
 
 @RestController
 @RequestMapping("/task")
 public class AController {
-
     private static Logger log = LoggerFactory.getLogger(AController.class);
 
-    @Autowired
-    private Repository repository;
     @Autowired
     private AService service;
 
@@ -27,7 +25,7 @@ public class AController {
     public String post() throws InterruptedException, EssenceNotFoundException {
 
         log.info("Start Post.");
-        UUID id = service.createAndUpdate(repository);
+        UUID id = service.createAndUpdate();
         log.info("End Post.");
 
         return id.toString();
@@ -36,21 +34,20 @@ public class AController {
     // получить запись по id
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public String get(@PathVariable(value = "id") UUID id) {
+    public String get(@PathVariable(value = "id") String id) {
 
         log.info("Start Get.");
         Essence essence;
 
-        // если передан не GUID
-        if (id instanceof UUID) {
-            // если задачи нет
-            essence = repository.findById(id).orElseThrow(Exception404::new);
-            log.info("End Get.");
-            return essence.getStatus();
-        } else {
+        final UUID uuid;
+        try {
+            uuid = UUID.fromString(id);
+        } catch (IllegalArgumentException e) {
             log.info("Throw Exception.");
             throw new Exception400();
         }
-
+        essence = service.findById(uuid);
+        log.info("End Get.");
+        return essence.getStatus();
     }
 }
