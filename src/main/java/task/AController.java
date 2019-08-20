@@ -31,7 +31,7 @@ public class AController {
         return id.toString();
     }
 
-    // получить запись по id
+    // получить запись по id (тест)
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public String get(@PathVariable(value = "id") String id) {
